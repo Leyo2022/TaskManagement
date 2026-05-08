@@ -81,6 +81,7 @@ import { MOCK_TASKS } from "./mockData";
 import { WorkHoursView } from "./components/WorkHoursView";
 import { ClockInView } from "./components/ClockInView";
 import { MySubmissionsView } from "./components/MySubmissionsView";
+import { CreateTaskModal } from "./components/CreateTaskModal";
 
 // --- Types & Constants ---
 
@@ -137,64 +138,6 @@ interface ViewDefinition {
     | "submissions";
 }
 
-const CreateTaskModal = ({ onClose }: { onClose: () => void }) => {
-  const [mode, setMode] = useState<'selection' | 'normal' | 'pipeline'>('selection');
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-lg font-bold">新建任务</h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-slate-400" /></button>
-        </div>
-        
-        <div className="p-6">
-          {mode === 'selection' && (
-            <div className="flex gap-4">
-              <button 
-                onClick={() => setMode('normal')}
-                className="flex-1 p-6 border-2 border-slate-200 rounded-xl hover:border-indigo-500 transition-all text-center"
-              >
-                <div className="font-bold text-lg mb-1">普通任务</div>
-                <div className="text-xs text-slate-500">不绑定资产的自由任务</div>
-              </button>
-              <button 
-                onClick={() => setMode('pipeline')}
-                className="flex-1 p-6 border-2 border-slate-200 rounded-xl hover:border-indigo-500 transition-all text-center"
-              >
-                <div className="font-bold text-lg mb-1">管线制作任务</div>
-                <div className="text-xs text-slate-500">基于管线流程的制作任务</div>
-              </button>
-            </div>
-          )}
-          
-          {(mode === 'normal' || mode === 'pipeline') && (
-            <div className="space-y-4">
-              <div className="font-bold text-sm text-slate-900 mb-4">
-                {mode === 'normal' ? '新建普通任务' : '新建管线制作任务'}
-              </div>
-              <input type="text" placeholder="任务名称" className="w-full p-3 border border-slate-200 rounded-lg text-sm" />
-              <div className="grid grid-cols-2 gap-4">
-                 <input type="text" placeholder="任务类型" className="p-3 border border-slate-200 rounded-lg text-sm" />
-                 <input type="text" placeholder="环节" className="p-3 border border-slate-200 rounded-lg text-sm" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <input type="text" placeholder="优先级" className="p-3 border border-slate-200 rounded-lg text-sm" />
-                 <input type="text" placeholder="责任人" className="p-3 border border-slate-200 rounded-lg text-sm" />
-              </div>
-              <textarea placeholder="任务描述" className="w-full p-3 border border-slate-200 rounded-lg text-sm h-24" />
-              <div className="flex gap-4">
-                <input type="date" className="p-3 border border-slate-200 rounded-lg text-sm flex-1" />
-                <input type="date" className="p-3 border border-slate-200 rounded-lg text-sm flex-1" />
-              </div>
-              <button className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold">创建任务</button>
-            </div>
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
-};
 
 const CreateViewModal = ({
   onClose,
@@ -849,55 +792,7 @@ const DashboardView = ({
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Shortcuts Section */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-            收藏捷径
-          </h3>
-          <button 
-            onClick={onAddShortcut}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-indigo-50 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            自定义入口
-          </button>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {shortcuts.map(shortcut => (
-            <a
-              key={shortcut.id}
-              href={shortcut.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex flex-col items-center gap-3 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all text-center"
-            >
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: shortcut.color || '#6366f1' }}
-              >
-                <ArrowUpRight className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-medium text-slate-600 group-hover:text-indigo-600 truncate w-full">
-                {shortcut.name}
-              </span>
-            </a>
-          ))}
-          <button
-            onClick={onAddShortcut}
-            className="flex flex-col items-center gap-3 p-4 rounded-xl border border-dashed border-slate-200 hover:border-indigo-300 hover:bg-slate-50 transition-all text-center group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
-              <Plus className="w-5 h-5" />
-            </div>
-            <span className="text-xs font-medium text-slate-400 group-hover:text-indigo-500">
-              添加入口
-            </span>
-          </button>
-        </div>
-      </div>
-
+      {/* Dashboard Content */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[350px]">
           <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -1525,54 +1420,7 @@ export default function App() {
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between px-3 mb-2">
-              <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                收藏&捷径
-              </h2>
-              <button
-                onClick={() => setIsAddShortcutOpen(true)}
-                className="text-slate-400 hover:text-indigo-600 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <div className="space-y-1">
-              {favoriteViews.map((view) => (
-                <button
-                  key={view.id}
-                  onClick={() => handleViewChange(view.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                    activeViewId === view.id
-                      ? "bg-indigo-50 text-indigo-700 font-medium"
-                      : "text-slate-600 hover:bg-slate-50",
-                  )}
-                >
-                  {view.icon}
-                  {view.name}
-                </button>
-              ))}
-              {shortcuts.map((shortcut) => (
-                <a
-                  key={shortcut.id}
-                  href={shortcut.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors group"
-                >
-                  <div 
-                    className="w-4 h-4 rounded flex items-center justify-center text-[10px] text-white font-bold"
-                    style={{ backgroundColor: shortcut.color || '#6366f1' }}
-                  >
-                    {shortcut.name.charAt(0)}
-                  </div>
-                  <span className="flex-1 truncate">{shortcut.name}</span>
-                  <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
-                </a>
-              ))}
-            </div>
-          </div>
+          {/* Favorites & Shortcuts placeholder - removed */}
         </nav>
 
         <div className="p-4 border-t border-slate-100">
