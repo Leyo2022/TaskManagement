@@ -137,6 +137,65 @@ interface ViewDefinition {
     | "submissions";
 }
 
+const CreateTaskModal = ({ onClose }: { onClose: () => void }) => {
+  const [mode, setMode] = useState<'selection' | 'normal' | 'pipeline'>('selection');
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-lg font-bold">新建任务</h2>
+          <button onClick={onClose}><X className="w-5 h-5 text-slate-400" /></button>
+        </div>
+        
+        <div className="p-6">
+          {mode === 'selection' && (
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setMode('normal')}
+                className="flex-1 p-6 border-2 border-slate-200 rounded-xl hover:border-indigo-500 transition-all text-center"
+              >
+                <div className="font-bold text-lg mb-1">普通任务</div>
+                <div className="text-xs text-slate-500">不绑定资产的自由任务</div>
+              </button>
+              <button 
+                onClick={() => setMode('pipeline')}
+                className="flex-1 p-6 border-2 border-slate-200 rounded-xl hover:border-indigo-500 transition-all text-center"
+              >
+                <div className="font-bold text-lg mb-1">管线制作任务</div>
+                <div className="text-xs text-slate-500">基于管线流程的制作任务</div>
+              </button>
+            </div>
+          )}
+          
+          {(mode === 'normal' || mode === 'pipeline') && (
+            <div className="space-y-4">
+              <div className="font-bold text-sm text-slate-900 mb-4">
+                {mode === 'normal' ? '新建普通任务' : '新建管线制作任务'}
+              </div>
+              <input type="text" placeholder="任务名称" className="w-full p-3 border border-slate-200 rounded-lg text-sm" />
+              <div className="grid grid-cols-2 gap-4">
+                 <input type="text" placeholder="任务类型" className="p-3 border border-slate-200 rounded-lg text-sm" />
+                 <input type="text" placeholder="环节" className="p-3 border border-slate-200 rounded-lg text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <input type="text" placeholder="优先级" className="p-3 border border-slate-200 rounded-lg text-sm" />
+                 <input type="text" placeholder="责任人" className="p-3 border border-slate-200 rounded-lg text-sm" />
+              </div>
+              <textarea placeholder="任务描述" className="w-full p-3 border border-slate-200 rounded-lg text-sm h-24" />
+              <div className="flex gap-4">
+                <input type="date" className="p-3 border border-slate-200 rounded-lg text-sm flex-1" />
+                <input type="date" className="p-3 border border-slate-200 rounded-lg text-sm flex-1" />
+              </div>
+              <button className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold">创建任务</button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const CreateViewModal = ({
   onClose,
   onCreate,
@@ -969,6 +1028,7 @@ export default function App() {
     "list" | "kanban" | "dashboard"
   >("list");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedTaskTab, setSelectedTaskTab] = useState<"details" | "workflow" | "hours">("details");
   const [personalViews, setPersonalViews] = useState<ViewDefinition[]>([
@@ -1375,9 +1435,16 @@ export default function App() {
             </div>
             <h1 className="text-lg font-bold tracking-tight">CineFlow</h1>
           </div>
-          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">
+          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold mb-4">
             影视项目管理系统
           </p>
+          <button
+            onClick={() => setIsCreateTaskModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-2.5 text-sm font-bold transition-all shadow-md shadow-indigo-200 active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            新建任务
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -2902,40 +2969,6 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-
-                      {/* Clock-in Records section */}
-                      <div className="space-y-4 pt-6 border-t border-slate-100">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">周期内打卡明细</h4>
-                          <button className="text-[10px] font-bold text-indigo-600 hover:underline">分配通用工时到此任务</button>
-                        </div>
-                        <div className="space-y-2">
-                          {selectedTask.clockInRecords && selectedTask.clockInRecords.length > 0 ? (
-                            selectedTask.clockInRecords.map(record => (
-                              <div key={record.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all hover:bg-white hover:shadow-sm group">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 group-hover:bg-indigo-50 transition-colors">
-                                    <LogIn className="w-4 h-4" />
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-slate-900">{record.startTime.split('T')[0]}</p>
-                                    <p className="text-[10px] text-slate-400">{record.startTime.split('T')[1].slice(0,5)} - {record.endTime?.split('T')[1].slice(0,5)}</p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold text-slate-900">{record.duration}h</p>
-                                  <span className="text-[8px] px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded-full font-bold uppercase">考勤记录</span>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-10 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center">
-                              <Clock className="w-8 h-8 text-slate-200 mb-2" />
-                              <p className="text-xs text-slate-400">暂无打卡数据</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
                     </motion.div>
                   )}
 
@@ -3347,6 +3380,11 @@ export default function App() {
           <CreateViewModal
             onClose={() => setIsCreateViewOpen(false)}
             onCreate={handleCreateView}
+          />
+        )}
+        {isCreateTaskModalOpen && (
+          <CreateTaskModal
+            onClose={() => setIsCreateTaskModalOpen(false)}
           />
         )}
       </AnimatePresence>
