@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { motion } from "motion/react";
-import { X, Search, FileText, Layers, Paperclip } from "lucide-react";
+import { X, Search, FileText, Layers, Paperclip, Edit2 } from "lucide-react";
 import { cn } from "../lib/utils";
+import { PipelineEditModal } from "./PipelineEditModal";
 
 export const CreateTaskModal = ({ onClose }: { onClose: () => void }) => {
   const [mode, setMode] = useState<'selection' | 'normal' | 'pipeline'>('selection');
@@ -65,12 +66,13 @@ export const CreateTaskModal = ({ onClose }: { onClose: () => void }) => {
   ];
   const [selectedStage, setSelectedStage] = useState<string>('');
   const [taskName, setTaskName] = useState<string>('');
+  const [isEditingPipeline, setIsEditingPipeline] = useState(false);
 
-  const pipelineData: Record<string, string[]> = {
+  const [pipelineData, setPipelineData] = useState<Record<string, string[]>>({
     '角色制作': ['模型设计', '拓扑', '高模', '贴图', '绑定'],
     '场景制作': ['布景', '资产整理', '材质', '渲染'],
     '特效制作': ['粒子', '流体', '破坏'],
-  };
+  });
 
   const assetNames = useMemo(() => {
     const all = [...mockData.assets, ...mockData.entities];
@@ -98,6 +100,14 @@ export const CreateTaskModal = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {isEditingPipeline && selectedStage && (
+        <PipelineEditModal 
+          pipelineName={selectedStage}
+          initialSteps={pipelineData[selectedStage]}
+          onClose={() => setIsEditingPipeline(false)}
+          onSave={(newSteps) => setPipelineData(prev => ({ ...prev, [selectedStage]: newSteps }))}
+        />
+      )}
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-xl font-bold">
@@ -229,10 +239,15 @@ export const CreateTaskModal = ({ onClose }: { onClose: () => void }) => {
               )}
               <input type="text" value={taskName} onChange={e => setTaskName(e.target.value)} placeholder="任务名称" className="w-full p-4 border border-slate-200 rounded-xl text-sm" />
               <div className="grid grid-cols-1 gap-4">
-                  <select value={selectedStage} onChange={e => setSelectedStage(e.target.value)} className="p-4 border border-slate-200 rounded-xl text-sm bg-white">
-                    <option value="">选择环节</option>
-                    {Object.keys(pipelineData).map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <div className="flex gap-2">
+                    <select value={selectedStage} onChange={e => setSelectedStage(e.target.value)} className="flex-1 p-4 border border-slate-200 rounded-xl text-sm bg-white">
+                      <option value="">选择环节</option>
+                      {Object.keys(pipelineData).map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    {selectedStage && (
+                      <button onClick={() => setIsEditingPipeline(true)} className="p-4 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 hover:bg-slate-100"><Edit2 className="w-5 h-5" /></button>
+                    )}
+                  </div>
                   {selectedStage && pipelineData[selectedStage] && (
                       <div className="flex flex-wrap gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <span className="text-xs text-slate-400 font-bold self-center">管线：</span>
@@ -256,7 +271,7 @@ export const CreateTaskModal = ({ onClose }: { onClose: () => void }) => {
               <div>
                   <label className="text-xs text-slate-500 font-bold mb-2 block">参与人</label>
                   <select multiple className="w-full p-4 border border-slate-200 rounded-xl text-sm bg-white"
-                          value={participants} onChange={e => setParticipants(Array.from(e.target.selectedOptions, option => option.value))}>
+                          value={participants} onChange={e => setParticipants(Array.from((e.target as HTMLSelectElement).selectedOptions, option => option.value))}>
                       {mockUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
               </div>

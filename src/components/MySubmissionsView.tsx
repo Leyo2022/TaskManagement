@@ -93,7 +93,7 @@ export const MySubmissionsView = ({ onNavigate }: MySubmissionsViewProps) => {
 
   const viewModes = [
     { id: 'list', icon: List, label: '列表' },
-    { id: 'kanban', icon: LayoutGrid, label: '看板' },
+    { id: 'kanban', icon: LayoutGrid, label: '泳道视图' },
   ];
 
   const renderTasksView = () => {

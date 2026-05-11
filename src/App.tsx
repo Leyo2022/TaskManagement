@@ -12,6 +12,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
+import { KanbanBoard } from './components/KanbanBoard';
 import {
   LayoutGrid,
   List as ListIcon,
@@ -918,7 +919,10 @@ const DashboardView = ({
 // --- Main App ---
 
 export default function App() {
-  const [tasks] = useState<Task[]>(MOCK_TASKS);
+  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS);
+  const handleTaskUpdate = (task: Task, newStatus: TaskStatus) => {
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+  };
   const [currentView, setCurrentView] = useState<
     "list" | "kanban" | "dashboard"
   >("list");
@@ -928,34 +932,44 @@ export default function App() {
   const [selectedTaskTab, setSelectedTaskTab] = useState<"details" | "workflow" | "hours">("details");
   const [personalViews, setPersonalViews] = useState<ViewDefinition[]>([
     {
-      id: "v1",
-      name: "我负责的任务",
-      icon: <User className="w-3.5 h-3.5" />,
+      id: "v_mine",
+      name: "归属于我的",
+      icon: <Inbox className="w-3.5 h-3.5" />,
       filters: [
         {
-          id: "f1",
+          id: "f_mine",
           field: "assigneeName",
-          operator: "equals",
-          value: "建模师-老王",
+          operator: "contains",
+          value: "陈总",
         },
       ],
       type: "list",
     },
     {
-      id: "v2",
-      name: "本周截止",
-      icon: <CalendarIcon className="w-3.5 h-3.5" />,
+      id: "v_created",
+      name: "我创建的",
+      icon: <Plus className="w-3.5 h-3.5" />,
       filters: [
-        { id: "f2", field: "plannedEndDate", operator: "contains", value: "2026-03" },
+        {
+          id: "f_created",
+          field: "creatorName",
+          operator: "contains",
+          value: "陈总",
+        },
       ],
       type: "list",
     },
     {
-      id: "v3",
-      name: "高优先级",
-      icon: <Flag className="w-3.5 h-3.5" />,
+      id: "v_participated",
+      name: "我参与的",
+      icon: <Star className="w-3.5 h-3.5" />,
       filters: [
-        { id: "f3", field: "priority", operator: "equals", value: "high" },
+        {
+          id: "f_participated",
+          field: "participantNames",
+          operator: "contains",
+          value: "陈总",
+        },
       ],
       type: "list",
     },
@@ -1027,53 +1041,18 @@ export default function App() {
       type: "list",
     },
     {
-      id: "v1",
-      name: "归属于我的",
-      icon: <Inbox className="w-4 h-4" />,
-      filters: [
-        {
-          id: "f_mine",
-          field: "assigneeName",
-          operator: "contains",
-          value: "陈总",
-        },
-      ],
-      type: "list",
-    },
-    {
-      id: "v2",
-      name: "我创建的",
-      icon: <Plus className="w-4 h-4" />,
-      filters: [
-        {
-          id: "f_created",
-          field: "creatorName",
-          operator: "contains",
-          value: "陈总",
-        },
-      ],
-      type: "list",
-    },
-    {
-      id: "v3",
-      name: "我参与的",
-      icon: <Star className="w-4 h-4" />,
-      filters: [
-        {
-          id: "f_participated",
-          field: "participantNames",
-          operator: "contains",
-          value: "陈总",
-        },
-      ],
-      type: "list",
-    },
-    {
       id: "v_submissions",
       name: "我的提交",
       icon: <ArrowUpRight className="w-4 h-4" />,
       filters: [],
       type: "submissions",
+    },
+    {
+      id: "today_prod",
+      name: "今日制作",
+      icon: <Layers className="w-4 h-4" />,
+      filters: [],
+      type: "kanban",
     },
   ];
 
@@ -1451,6 +1430,13 @@ export default function App() {
               </div>
               <h2 className="text-lg font-bold text-slate-900">我的提交</h2>
             </div>
+          ) : activeView.id === "today_prod" ? (
+             <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                <Layers className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-900">今日制作看板管理</h2>
+            </div>
           ) : (
             <>
               <div className="flex items-center gap-4 flex-1">
@@ -1780,46 +1766,48 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex bg-slate-100 p-1 rounded-lg">
-                  <button
-                    onClick={() => setCurrentView("list")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
-                      currentView === "list"
-                        ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700",
-                    )}
-                  >
-                    <ListIcon className="w-3.5 h-3.5" />
-                    列表
-                  </button>
-                  <button
-                    onClick={() => setCurrentView("kanban")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
-                      currentView === "kanban"
-                        ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700",
-                    )}
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                    看板
-                  </button>
-                  <button
-                    onClick={() => setCurrentView("dashboard")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
-                      currentView === "dashboard"
-                        ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700",
-                    )}
-                  >
-                    <PieChartIcon className="w-3.5 h-3.5" />
-                    仪表盘
-                  </button>
+              {activeView.id !== "today_prod" && (
+                <div className="flex items-center gap-3">
+                  <div className="flex bg-slate-100 p-1 rounded-lg">
+                    <button
+                      onClick={() => setCurrentView("list")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
+                        currentView === "list"
+                          ? "bg-white text-indigo-600 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700",
+                      )}
+                    >
+                      <ListIcon className="w-3.5 h-3.5" />
+                      列表
+                    </button>
+                    <button
+                      onClick={() => setCurrentView("kanban")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
+                        currentView === "kanban"
+                          ? "bg-white text-indigo-600 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700",
+                      )}
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      泳道视图
+                    </button>
+                    <button
+                      onClick={() => setCurrentView("dashboard")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
+                        currentView === "dashboard"
+                          ? "bg-white text-indigo-600 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700",
+                      )}
+                    >
+                      <PieChartIcon className="w-3.5 h-3.5" />
+                      仪表盘
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </header>
@@ -1835,6 +1823,8 @@ export default function App() {
             />
           ) : activeView.type === "submissions" ? (
             <MySubmissionsView onNavigate={handleNavigate} />
+          ) : activeView.type === "kanban" ? (
+            <KanbanBoard tasks={filteredTasks} onTaskClick={setSelectedTask} onTaskUpdate={handleTaskUpdate} />
           ) : currentView === "list" ? (
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col h-full">
               <div className="flex-1 overflow-auto">
@@ -2121,161 +2111,6 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            </div>
-          ) : currentView === "kanban" ? (
-            <div className="flex gap-6 h-full overflow-x-auto pb-4 min-h-[600px]">
-              {(Object.entries(kanbanGroups) as [string, Task[]][]).map(
-                ([groupName, groupTasks]) => (
-                  <div
-                    key={groupName}
-                    className="w-80 shrink-0 flex flex-col bg-slate-50/50 rounded-xl border border-slate-200/50"
-                  >
-                    <div className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                        <h3 className="text-sm font-bold text-slate-900 capitalize">
-                          {groupBy === "status" || groupBy === "none"
-                            ? [
-                                "todo",
-                                "in_progress",
-                                "review",
-                                "paused",
-                                "done",
-                                "cancelled",
-                              ].includes(groupName)
-                              ? (
-                                  {
-                                    todo: "未开始",
-                                    in_progress: "进行中",
-                                    review: "审核中",
-                                    paused: "已暂停",
-                                    done: "已完成",
-                                    cancelled: "已取消",
-                                  } as any
-                                )[groupName]
-                              : groupName
-                            : groupBy === "priority"
-                              ? (
-                                  {
-                                    low: "低优先级",
-                                    medium: "中优先级",
-                                    high: "高优先级",
-                                  } as any
-                                )[groupName] || groupName
-                              : groupName}
-                        </h3>
-                        <span className="text-[10px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-100">
-                          {groupTasks.length}
-                        </span>
-                      </div>
-                      <button className="p-1 hover:bg-slate-200 rounded transition-colors">
-                        <Plus className="w-4 h-4 text-slate-400" />
-                      </button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                      {groupTasks.map((task) => (
-                        <motion.div
-                          key={task.id}
-                          layoutId={task.id}
-                          onClick={() => setSelectedTask(task)}
-                          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <span className="text-[10px] font-mono text-slate-400">
-                              {task.id}
-                            </span>
-                            <div className="flex flex-col gap-1 items-end">
-                              <StatusBadge status={task.status} />
-                              <PriorityBadge priority={task.priority} />
-                            </div>
-                          </div>
-
-                          {(task.thumbnail || task.gifUrl) && (
-                            <div className="mb-3 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 aspect-video relative group/media">
-                              <img 
-                                src={task.gifUrl || task.thumbnail} 
-                                className="w-full h-full object-cover" 
-                                alt="" 
-                                referrerPolicy="no-referrer"
-                              />
-                            </div>
-                          )}
-
-                          <h4 className="text-sm font-bold text-slate-900 mb-2 leading-snug group-hover:text-indigo-600 transition-colors">
-                            {task.name}
-                          </h4>
-
-                          <div className="space-y-2 mb-4">
-                            <div className="flex items-center justify-between text-[11px] text-slate-500">
-                              <div className="flex items-center gap-1">
-                                <CalendarIcon className="w-3 h-3" />
-                                <span>{format(new Date(task.plannedEndDate), "MM-dd")}</span>
-                                {task.status !== TaskStatus.Done && (
-                                  <span className={cn(
-                                    "ml-1",
-                                    isPast(new Date(task.plannedEndDate)) ? "text-rose-500 font-bold" : "text-slate-400"
-                                  )}>
-                                    {isPast(new Date(task.plannedEndDate)) ? "已逾期" : `剩 ${Math.max(0, Math.ceil((new Date(task.plannedEndDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))} 天`}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="font-medium">
-                                {task.plannedHours}h / {task.actualHours}h
-                              </div>
-                            </div>
-
-                            {task.assetIds && task.assetIds.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {task.assetIds.slice(0, 2).map(aid => (
-                                  <span key={aid} className="text-[9px] bg-indigo-50 text-indigo-500 px-1 rounded font-bold uppercase">
-                                    {aid}
-                                  </span>
-                                ))}
-                                {task.assetIds.length > 2 && (
-                                  <span className="text-[9px] text-slate-400">+{task.assetIds.length - 2}</span>
-                                )}
-                              </div>
-                            )}
-
-                            {task.overdueTime && isPast(new Date(task.overdueTime)) && (
-                              <div className="flex items-center gap-1 text-[10px] text-rose-500 font-bold bg-rose-50 px-2 py-1 rounded">
-                                <AlertCircle className="w-3 h-3" />
-                                超时警告: {format(new Date(task.overdueTime), "MM-dd")}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1 text-slate-400">
-                                <MessageSquare className="w-3 h-3" />
-                                <span className="text-[10px] font-medium">
-                                  {task.commentsCount}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-slate-400">
-                                <Paperclip className="w-3 h-3" />
-                                <span className="text-[10px] font-medium">
-                                  {task.attachmentsCount}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-slate-500 font-medium">{task.assigneeName}</span>
-                              <img
-                                src={task.assigneeAvatar}
-                                className="w-6 h-6 rounded-full border border-white shadow-sm"
-                                alt=""
-                              />
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                ),
-              )}
             </div>
           ) : (
             <DashboardView 
