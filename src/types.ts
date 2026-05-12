@@ -63,6 +63,18 @@ export interface TaskMaterial {
   category: 'reference' | 'work_in_progress' | 'published';
 }
 
+export interface Subtask {
+  id: string;
+  parentTaskId: string;
+  name: string;
+  description: string;
+  assigneeId: string;
+  assigneeName: string;
+  assigneeAvatar?: string;
+  status: TaskStatus;
+  dueDate: string; // YYYY-MM-DD
+}
+
 export interface Task {
   // 一、基础信息
   id: string;
@@ -73,6 +85,7 @@ export interface Task {
   status: TaskStatus;
   processStatus?: TaskProcessStatus;
   progress: number; // 0-100
+  subtasks?: Subtask[];
 
   // 二、关联对象
   projectId: string;

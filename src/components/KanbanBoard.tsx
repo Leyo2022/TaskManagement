@@ -12,19 +12,35 @@ interface Props {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onTaskUpdate?: (task: Task, newStatus: TaskStatus) => void;
+  defaultViewMode?: 'kanban' | 'swimlane';
+  showSwitcher?: boolean;
 }
 
 const TaskCard: React.FC<{ task: Task, onClick: () => void, isOverlay?: boolean, className?: string }> = ({ task, onClick, isOverlay, className }) => {
     return (
-        <div onClick={onClick} className={cn("bg-white border border-slate-200 rounded-lg shadow-sm w-full cursor-pointer hover:bg-slate-50", isOverlay ? "opacity-100 rotate-2 cursor-grabbing" : "", className)}>
-            <div className="p-3 pb-1">
-                <div className="text-sm font-bold text-slate-900">{task.name}</div>
-            </div>
-            <div className="p-3 pt-1">
-                <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-                    <div className="flex items-center gap-1"><CalendarIcon className="w-3 h-3"/> {format(new Date(task.plannedEndDate), 'MM-dd')}</div>
-                    <img src={task.assigneeAvatar} className="w-5 h-5 rounded-full" alt="" />
+        <div onClick={onClick} className={cn("bg-white border border-slate-200 rounded-xl shadow-sm w-full cursor-pointer hover:shadow-md transition-shadow", isOverlay ? "opacity-100 rotate-2 cursor-grabbing" : "", className)}>
+            <div className="p-4 border-b border-slate-100">
+                <div className="flex justify-between items-start gap-2">
+                    <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{task.id}</span>
+                    <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded uppercase", 
+                        task.priority === 'urgent' ? 'bg-red-100 text-red-700' : 
+                        task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                        'bg-slate-100 text-slate-600'
+                    )}>{task.priority}</span>
                 </div>
+                <div className="text-sm font-semibold text-slate-900 mt-2">{task.name}</div>
+            </div>
+            <div className="px-4 py-2 flex items-center justify-between text-xs text-slate-500">
+                <div className="flex items-center gap-1.5">
+                    <CalendarIcon className="w-3 h-3 text-slate-400"/> {format(new Date(task.plannedEndDate), 'MM-dd')}
+                </div>
+                {task.assigneeAvatar ? (
+                  <img src={task.assigneeAvatar} className="w-6 h-6 rounded-full border border-slate-100" alt={task.assigneeName} title={task.assigneeName} />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-slate-600 font-bold">
+                    {task.assigneeName.slice(0, 1)}
+                  </div>
+                )}
             </div>
         </div>
     );
@@ -63,11 +79,11 @@ const DroppableColumn: React.FC<{ col: { id: string, label: string, colorClass: 
     );
   };
 
-export const KanbanBoard: React.FC<Props> = ({ tasks, onTaskClick, onTaskUpdate }) => {
+export const KanbanBoard: React.FC<Props> = ({ tasks, onTaskClick, onTaskUpdate, defaultViewMode = 'kanban', showSwitcher = true }) => {
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
   const [selectedPipeline, setSelectedPipeline] = useState<string>('all');
   const [selectedStep, setSelectedStep] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'kanban' | 'swimlane'>('kanban');
+  const [viewMode, setViewMode] = useState<'kanban' | 'swimlane'>(defaultViewMode);
   const [swimlaneGroup, setSwimlaneGroup] = useState<'step' | 'assignee'>('step');
   const [showFilters, setShowFilters] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -162,19 +178,17 @@ export const KanbanBoard: React.FC<Props> = ({ tasks, onTaskClick, onTaskUpdate 
                     )}
                 </div>
             </div>
-            <div className="flex bg-slate-50 border border-slate-200 p-1 rounded-xl">
-                <button onClick={() => setViewMode('kanban')} className={cn("px-4 py-1.5 rounded-lg font-medium transition-all", viewMode === 'kanban' ? "bg-white shadow text-slate-900" : "text-slate-500")}>看板管理</button>
-                <button onClick={() => setViewMode('swimlane')} className={cn("px-4 py-1.5 rounded-lg font-medium transition-all", viewMode === 'swimlane' ? "bg-white shadow text-slate-900" : "text-slate-500")}>泳道视图</button>
-            </div>
+            {showSwitcher && (
+                <div className="flex bg-slate-50 border border-slate-200 p-1 rounded-xl">
+                    <button onClick={() => setViewMode('kanban')} className={cn("px-4 py-1.5 rounded-lg font-medium transition-all", viewMode === 'kanban' ? "bg-white shadow text-slate-900" : "text-slate-500")}>看板管理</button>
+                    <button onClick={() => setViewMode('swimlane')} className={cn("px-4 py-1.5 rounded-lg font-medium transition-all", viewMode === 'swimlane' ? "bg-white shadow text-slate-900" : "text-slate-500")}>泳道视图</button>
+                </div>
+            )}
         </div>
         
         {viewMode === 'swimlane' ? (
-            <div className="p-4 h-full flex flex-col gap-4">
-                <div className="flex bg-white p-1 rounded-xl border border-slate-200 self-start">
-                    <button onClick={() => setSwimlaneGroup('step')} className={cn("px-4 py-1.5 rounded-lg font-medium", swimlaneGroup === 'step' ? "bg-slate-100 text-slate-900" : "text-slate-500")}>按流程步骤分组</button>
-                    <button onClick={() => setSwimlaneGroup('assignee')} className={cn("px-4 py-1.5 rounded-lg font-medium", swimlaneGroup === 'assignee' ? "bg-slate-100 text-slate-900" : "text-slate-500")}>按负责人分组</button>
-                </div>
-                <div className="flex gap-4 overflow-y-hidden overflow-x-auto">
+            <div className="p-4 h-full flex flex-col gap-4 overflow-x-auto">
+                <div className="flex gap-4 h-full">
                     {/* Render Swimlanes */}
                     {(swimlaneGroup === 'assignee' ? assignees.filter(a => a !== 'all') : ['Blockout', 'Details', 'HighPoly']).map(group => {
                         const groupTasks = filteredTasks.filter(t => swimlaneGroup === 'assignee' ? t.assigneeName === group : true); // Simplified filtering for demo

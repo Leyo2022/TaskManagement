@@ -77,12 +77,14 @@ import {
   FilterCondition,
   FilterOperator,
   Shortcut,
+  Subtask,
 } from "./types";
 import { MOCK_TASKS } from "./mockData";
 import { WorkHoursView } from "./components/WorkHoursView";
 import { ClockInView } from "./components/ClockInView";
 import { MySubmissionsView } from "./components/MySubmissionsView";
 import { CreateTaskModal } from "./components/CreateTaskModal";
+import { AddSubtaskModal } from "./components/AddSubtaskModal";
 
 // --- Types & Constants ---
 
@@ -119,6 +121,7 @@ const TASK_FIELDS: { value: keyof Task; label: string }[] = [
   { value: "projectLead", label: "项目负责人" },
   { value: "creatorName", label: "创建人" },
   { value: "progress", label: "进度%" },
+  { value: "subtasks", label: "子任务" },
 ];
 
 type RowHeight = "compact" | "standard" | "comfortable";
@@ -928,8 +931,9 @@ export default function App() {
   >("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [isAddSubtaskModalOpen, setIsAddSubtaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [selectedTaskTab, setSelectedTaskTab] = useState<"details" | "workflow" | "hours">("details");
+  const [selectedTaskTab, setSelectedTaskTab] = useState<"details" | "subtasks" | "workflow" | "hours" | "materials" | "logs">("details");
   const [personalViews, setPersonalViews] = useState<ViewDefinition[]>([
     {
       id: "v_mine",
@@ -1436,6 +1440,17 @@ export default function App() {
                 <Layers className="w-5 h-5" />
               </div>
               <h2 className="text-lg font-bold text-slate-900">今日制作看板管理</h2>
+              <div className="flex items-center gap-2 ml-4">
+                 <button className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900">
+                   <Columns className="w-3.5 h-3.5" /> 字段配置
+                 </button>
+                 <button className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900">
+                   <Box className="w-3.5 h-3.5" /> 分组: 无
+                 </button>
+                 <button className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900">
+                   <ArrowUpRight className="w-3.5 h-3.5" /> 排序: 默认
+                 </button>
+              </div>
             </div>
           ) : (
             <>
@@ -1766,7 +1781,7 @@ export default function App() {
                 </div>
               </div>
 
-              {activeView.id !== "today_prod" && (
+              {(activeView.type === "kanban" || activeView.id === "v4") && (
                 <div className="flex items-center gap-3">
                   <div className="flex bg-slate-100 p-1 rounded-lg">
                     <button
@@ -1793,18 +1808,20 @@ export default function App() {
                       <LayoutGrid className="w-3.5 h-3.5" />
                       泳道视图
                     </button>
-                    <button
-                      onClick={() => setCurrentView("dashboard")}
-                      className={cn(
-                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
-                        currentView === "dashboard"
-                          ? "bg-white text-indigo-600 shadow-sm"
-                          : "text-slate-500 hover:text-slate-700",
-                      )}
-                    >
-                      <PieChartIcon className="w-3.5 h-3.5" />
-                      仪表盘
-                    </button>
+                    {activeView.id === "today_prod" && (
+                      <button
+                        onClick={() => setCurrentView("dashboard")}
+                        className={cn(
+                          "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
+                          currentView === "dashboard"
+                            ? "bg-white text-indigo-600 shadow-sm"
+                            : "text-slate-500 hover:text-slate-700",
+                        )}
+                      >
+                        <PieChartIcon className="w-3.5 h-3.5" />
+                        仪表盘
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -1823,8 +1840,8 @@ export default function App() {
             />
           ) : activeView.type === "submissions" ? (
             <MySubmissionsView onNavigate={handleNavigate} />
-          ) : activeView.type === "kanban" ? (
-            <KanbanBoard tasks={filteredTasks} onTaskClick={setSelectedTask} onTaskUpdate={handleTaskUpdate} />
+          ) : (currentView === "kanban" || activeView.type === "kanban") ? (
+            <KanbanBoard tasks={filteredTasks} onTaskClick={setSelectedTask} onTaskUpdate={handleTaskUpdate} showSwitcher={activeView.id === "today_prod"} defaultViewMode="swimlane" />
           ) : currentView === "list" ? (
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col h-full">
               <div className="flex-1 overflow-auto">
@@ -1927,6 +1944,11 @@ export default function App() {
                                         <p className="text-sm font-medium text-slate-900 truncate max-w-[240px]">
                                           {task.name}
                                         </p>
+                                        {task.subtasks && task.subtasks.length > 0 && (
+                                          <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold">
+                                            {task.subtasks.length}
+                                          </span>
+                                        )}
                                       </div>
                                     ) : col === "status" ? (
                                       <div className="flex flex-col gap-1 items-start">
@@ -2268,7 +2290,7 @@ export default function App() {
                       currentTheme?.shadow
                     )}>
                     <CheckCheck className="w-4 h-4" />
-                    {isPipelineTask ? "提审" : "提交"}
+                    任务完成
                   </button>
                   <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all">
                     <ArrowUpRight className="w-4 h-4" />
@@ -2302,6 +2324,22 @@ export default function App() {
                         <Info className="w-5 h-5" />
                       </div>
                       <span className="text-[10px] font-bold">详情</span>
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedTaskTab("subtasks")}
+                      className={cn(
+                        "flex flex-col items-center gap-1 transition-all group",
+                        selectedTaskTab === "subtasks" ? currentTheme?.text : "text-slate-400 hover:text-slate-600"
+                      )}
+                    >
+                      <div className={cn(
+                        "p-2.5 rounded-xl transition-all",
+                        selectedTaskTab === "subtasks" ? cn(currentTheme?.bg, "text-white shadow-lg", currentTheme?.shadow) : "bg-white border border-slate-200 group-hover:border-slate-300"
+                      )}>
+                        <Layers className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] font-bold">子任务</span>
                     </button>
 
                     <button
@@ -2371,6 +2409,82 @@ export default function App() {
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto bg-white p-8">
+                  {selectedTaskTab === "subtasks" && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-8"
+                    >
+                      <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                        <h3 className="font-bold text-slate-900 mb-4">任务统计</h3>
+                        <div className="flex gap-8">
+                          <div>
+                            <p className="text-xs text-slate-400">主任务</p>
+                            <p className="text-xl font-bold text-slate-900">{selectedTask.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-400">子任务总数</p>
+                            <p className="text-xl font-bold text-indigo-600">{selectedTask.subtasks?.length || 0}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h3 className="font-bold text-slate-900">子任务管理</h3>
+                        <button 
+                            onClick={() => setIsAddSubtaskModalOpen(true)}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold"
+                        >
+                            添加子任务
+                        </button>
+                      </div>
+
+                      {isAddSubtaskModalOpen && selectedTask && (
+                        <AddSubtaskModal
+                          parentTask={selectedTask}
+                          onClose={() => setIsAddSubtaskModalOpen(false)}
+                          onAdd={(sub) => {
+                            setTasks(prev => prev.map(t => t.id === selectedTask.id ? { ...t, subtasks: [...(t.subtasks || []), sub] } : t));
+                            setSelectedTask({ ...selectedTask, subtasks: [...(selectedTask.subtasks || []), sub] });
+                          }}
+                        />
+                      )}
+
+                      <div className="space-y-4">
+                        <h3 className="font-bold text-slate-900">子任务列表</h3>
+                        {selectedTask.subtasks && selectedTask.subtasks.length > 0 ? (
+                           <div className="space-y-2">
+                             {selectedTask.subtasks.map(sub => (
+                               <div key={sub.id} className="p-4 border rounded-xl flex items-center justify-between">
+                                 <div>
+                                   <p className="font-bold">{sub.name}</p>
+                                   <p className="text-xs text-slate-500">{sub.assigneeName} - {sub.dueDate}</p>
+                                 </div>
+                                 <div className="flex items-center gap-4">
+                                   {isPipelineTask && selectedTask.dccTools && selectedTask.dccTools.length > 0 && (
+                                      <div className="flex gap-2">
+                                        {selectedTask.dccTools.map(tool => (
+                                          <button 
+                                            key={tool} 
+                                            className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[9px] font-bold hover:bg-indigo-100 transition-all"
+                                          >
+                                            <Terminal className="w-2.5 h-2.5" />
+                                            {tool}
+                                          </button>
+                                        ))}
+                                      </div>
+                                   )}
+                                   <StatusBadge status={sub.status} />
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                        ) : (
+                          <p className="text-slate-400 text-sm">暂无子任务</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
                   {selectedTaskTab === "details" && (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
@@ -2485,10 +2599,6 @@ export default function App() {
                                 <PriorityBadge priority={selectedTask.priority} />
                               </div>
                               <div className="flex items-center gap-2">
-                                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-                                  <Pencil className="w-3.5 h-3.5" />
-                                  编辑任务
-                                </button>
                                 <button 
                                   onClick={() => {
                                     setConfirmAction({
@@ -2511,8 +2621,8 @@ export default function App() {
                                     开始制作
                                   </button>
                                 )}
-                                </div>
                               </div>
+                            </div>
 
                       {/* Basic Info Grid */}
                       <div className="grid grid-cols-2 gap-8">
@@ -2570,24 +2680,6 @@ export default function App() {
                               </div>
                             </button>
                           </div>
-                          
-                          {/* DCC Tools for pipeline tasks */}
-                          {isPipelineTask && selectedTask.dccTools && selectedTask.dccTools.length > 0 && (
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">DCC 启动工具</label>
-                              <div className="flex flex-wrap gap-2">
-                                {selectedTask.dccTools.map(tool => (
-                                  <button 
-                                    key={tool} 
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-100"
-                                  >
-                                    <Terminal className="w-3 h-3" />
-                                    启动 {tool}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
 
